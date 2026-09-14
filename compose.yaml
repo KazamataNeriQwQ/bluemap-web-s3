@@ -4,7 +4,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MAP_DATA_ROOT: ${MAP_DATA_ROOT:?Set MAP_DATA_ROOT in .env}
-      MAP_IDS: ${MAP_IDS:?Set MAP_IDS in .env}
+      MAP_DATA_ROOT: ${MAP_DATA_ROOT:-}
+      MAP_IDS: ${MAP_IDS:-}
       LIVE_DATA_ROOT: ${LIVE_DATA_ROOT:-}
+    # Optional: mount a directory containing settings.json (takes precedence over env).
+    # volumes:
+    #   - ./config:/config:ro
     restart: unless-stopped

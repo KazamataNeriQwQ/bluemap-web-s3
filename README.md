@@ -2,7 +2,9 @@ Unmodified BlueMap 5.24 webapp in Docker, serving BlueMap 5.7 + BlueMapS3Storage
 
 ## Setup
 
-Copy `.env.example` to `.env`; set `MAP_DATA_ROOT` to your bucket’s public CDN URL and `MAP_IDS` to comma-separated map config filenames (without `.conf`). Optional `LIVE_DATA_ROOT` defaults to `MAP_DATA_ROOT`. No bucket keys in the container.
+Mount a directory containing your `settings.json` at `/config:ro` (see `compose.yaml`). Set `mapDataRoot` and `liveDataRoot` to your public CDN URL, `clientDecompression: true`, and `maps` to your map IDs. Mounted settings take precedence and are served unchanged.
+
+Alternatively, copy `.env.example` to `.env`: optional `MAP_DATA_ROOT` sets the CDN URL, `MAP_IDS` lists comma-separated map config filenames (without `.conf`), and `LIVE_DATA_ROOT` defaults to `MAP_DATA_ROOT`. With neither configuration, the map list is empty. No bucket keys in the container.
 
 ```sh
 docker compose up -d --build
@@ -54,4 +56,4 @@ write-players-interval: 10
 enabled: false
 ```
 
-Restart Minecraft. The container supplies `mapDataRoot`, `liveDataRoot` and `clientDecompression`; no webapp patches or file syncing. Missing tiles outside rendered terrain may return 404; BlueMap skips them.
+Restart Minecraft. BlueMap can generate the map list in its local webapp `settings.json` when `webapp.conf` is enabled; S3Storage does not upload that file. Share or sync it to `/config/settings.json` for server-managed maps, with CDN roots configured in `webapp.conf`. BlueMap 5.7 does not emit `clientDecompression`; add `"clientDecompression": true` to each synced copy. Missing tiles outside rendered terrain may return 404; BlueMap skips them.
