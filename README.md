@@ -16,7 +16,7 @@ R2 bucket → CORS policy (no Cloudflare Worker needed):
 [{"AllowedOrigins":["*"],"AllowedMethods":["GET","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]
 ```
 
-CDN [Cache Rule](https://developers.cloudflare.com/cache/how-to/configure-cache-status-code/), paths containing `/tiles/`: Edge TTL `200–299 = 540s`, `404 = no-cache (0)`. Purge existing cache. Keep `/live/` uncached.
+CDN [Cache Rule](https://developers.cloudflare.com/cache/how-to/configure-cache-status-code/), paths containing `/tiles/`: Edge TTL `200–299 = 540s`, `404 = no-cache (0)`; Browser TTL **Bypass cache**. Purge existing cache. Keep `/live/` uncached.
 
 Install `bluemap-5.7-fabric.jar` and matching Fabric API in `mods/`; put `BlueMapS3Storage-1.5.1.jar` in `config/bluemap/packs/`.
 
