@@ -1,0 +1,10 @@
+services:
+  bluemap:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      MAP_DATA_ROOT: ${MAP_DATA_ROOT:?Set MAP_DATA_ROOT in .env}
+      MAP_IDS: ${MAP_IDS:?Set MAP_IDS in .env}
+      LIVE_DATA_ROOT: ${LIVE_DATA_ROOT:-}
+    restart: unless-stopped
