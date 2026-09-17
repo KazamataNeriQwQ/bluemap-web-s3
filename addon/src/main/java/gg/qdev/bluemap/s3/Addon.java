@@ -69,7 +69,7 @@ public final class Addon implements Runnable {
                               .toList();
                       json.add("maps", new Gson().toJsonTree(ids));
                       json.addProperty("mapDataRoot", storage.publicUrl);
-                      json.addProperty("liveDataRoot", storage.publicUrl);
+                      json.addProperty("liveDataRoot", storage.liveUrl);
                       json.addProperty("clientDecompression", true);
                       String next = json.toString();
                       if (!next.equals(previous)) {

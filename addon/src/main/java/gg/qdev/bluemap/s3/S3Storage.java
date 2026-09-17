@@ -12,16 +12,25 @@ import java.util.stream.Stream;
 
 final class S3Storage implements Storage {
   final S3Client client;
-  final String prefix, publicUrl;
+  final String prefix, publicUrl, liveUrl;
+  final long settingsPublishInterval;
   private final Map<String, S3Map> maps = new ConcurrentHashMap<>();
   private final Path renderStatePath;
   private volatile boolean closed;
   private ScheduledExecutorService publisher;
 
-  S3Storage(S3Client client, String prefix, String publicUrl, Path renderStatePath) {
+  S3Storage(
+      S3Client client,
+      String prefix,
+      String publicUrl,
+      String liveUrl,
+      long settingsPublishInterval,
+      Path renderStatePath) {
     this.client = client;
     this.prefix = prefix;
     this.publicUrl = publicUrl;
+    this.liveUrl = liveUrl;
+    this.settingsPublishInterval = settingsPublishInterval;
     this.renderStatePath = renderStatePath;
   }
 
@@ -68,7 +77,7 @@ final class S3Storage implements Storage {
               t.setDaemon(true);
               return t;
             });
-    publisher.scheduleWithFixedDelay(task, 0, 10, TimeUnit.SECONDS);
+    publisher.scheduleWithFixedDelay(task, 0, settingsPublishInterval, TimeUnit.SECONDS);
   }
 
   void ensureOpen() throws IOException {
@@ -265,12 +274,12 @@ final class S3Storage implements Storage {
 
     @Override
     public ItemStorage markers() {
-      return new Item(root + "live/markers.json", Compression.NONE);
+      return state.markers();
     }
 
     @Override
     public ItemStorage players() {
-      return new Item(root + "live/players.json", Compression.NONE);
+      return state.players();
     }
 
     @Override

@@ -18,6 +18,8 @@ region: "auto"
 access-key-id: "YOUR_KEY_ID"
 secret-access-key: "YOUR_SECRET"
 public-url: "https://cdn.example.com"
+public-live-url: "https://mc.example.com:8100" # Original server's BlueMap webserver, serves live data
+settings-publish-interval: 10 # Seconds between settings.json uploads to S3
 
 # maps/<map-id>.conf (each map)
 storage: "s3"
@@ -25,8 +27,8 @@ storage: "s3"
 # webapp.conf (sync UI settings too)
 enabled: true
 
-# webserver.conf
-enabled: false
+# webserver.conf (must be enabled to serve live data from the original server)
+enabled: true
 
 # plugin.conf
 write-markers-interval: 10
@@ -43,6 +45,6 @@ R2 CORS:
 [{"AllowedOrigins":["*"],"AllowedMethods":["GET","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]
 ```
 
-Cloudflare: keep the existing tile-only rule (`200–299 = 240s`, `404 = no-cache`, Browser TTL **Bypass cache**). Keep `/settings.json` and `/live/` uncached. No Worker. The addon publishes settings with `Cache-Control: no-store`.
+Cloudflare: keep the existing tile-only rule (`200–299 = 240s`, `404 = no-cache`, Browser TTL **Bypass cache**). Keep `/settings.json` uncached and `/live/` pointed at the original server (`public-live-url`) so it stays fresh; don't cache live markers/players on the Worker or CDN. No Worker required for tiles, but a Worker frontend works: point the Worker's `liveDataRoot` (from the published settings) at `public-live-url` and expose the BlueMap webserver port publicly. The addon publishes settings with `Cache-Control: no-store`.
 
 Add/remove map configs, then `/bluemap reload`; reload the browser after rendering. No container changes. One server owns each bucket prefix. [Addon details](addon/README.md) · [Webapp options](webapp/README.md).

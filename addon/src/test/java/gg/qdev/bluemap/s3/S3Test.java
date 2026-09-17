@@ -105,6 +105,10 @@ class S3Test {
 
   @org.junit.jupiter.api.io.TempDir Path temporary;
 
+  private S3Storage storage(String publicUrl) {
+    return new S3Storage(client, "test/", publicUrl, "https://mc.example.com:8100", 10, temporary);
+  }
+
   @Test
   void pathsMatchBlueMapIncludingNegativeAndLargeCoordinates() throws Exception {
     var reference = new FileMapStorage(temporary, Compression.GZIP, false).hiresTiles();
@@ -130,7 +134,7 @@ class S3Test {
 
   @Test
   void roundTripCompressionAndMapScopedDeletion() throws Exception {
-    var storage = new S3Storage(client, "test/", "https://cdn.example.com/test", temporary);
+    var storage = storage("https://cdn.example.com/test");
     storage.initialize();
     var a = storage.map("custom_world");
     var sibling = storage.map("custom_world_2");
@@ -165,6 +169,32 @@ class S3Test {
     assertThrows(java.io.IOException.class, () -> sibling.settings().read());
   }
 
+  @Test
+  void liveDataStaysLocalOnly() throws Exception {
+    var storage = storage("https://cdn.example.com");
+    storage.initialize();
+    requests.clear();
+    var map = storage.map("world");
+    try (var out = map.markers().write()) {
+      out.write("{\"markers\":[]}".getBytes(StandardCharsets.UTF_8));
+    }
+    try (var out = map.players().write()) {
+      out.write("{\"players\":[]}".getBytes(StandardCharsets.UTF_8));
+    }
+    assertTrue(requests.isEmpty()); // Live data is never uploaded to S3.
+    assertTrue(java.nio.file.Files.exists(temporary.resolve("world/live/markers.json")));
+    assertTrue(java.nio.file.Files.exists(temporary.resolve("world/live/players.json")));
+    try (var in = map.markers().read()) {
+      assertEquals("{\"markers\":[]}", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
+    }
+    try (var in = map.players().read()) {
+      assertEquals("{\"players\":[]}", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
+    }
+    assertNull(objects.get("test/world/live/markers.json"));
+    assertNull(objects.get("test/world/live/players.json"));
+    storage.close();
+  }
+
   private byte[] gzip(String value) throws Exception {
     var bytes = new java.io.ByteArrayOutputStream();
     try (var out = Compression.GZIP.compress(bytes)) {
@@ -180,7 +210,7 @@ class S3Test {
     objects.put(tileKey, gzip("old tiles"));
     objects.put(chunkKey, gzip("old chunks"));
     objects.put("test/world/rstate/../../escape.tiles.dat", gzip("invalid"));
-    var storage = new S3Storage(client, "test/", "https://cdn.example.com", temporary);
+    var storage = storage("https://cdn.example.com");
     var map = storage.map("world");
     try (var in = map.tileState().read(-123, 456)) {
       assertEquals("old tiles", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
@@ -200,7 +230,7 @@ class S3Test {
     assertFalse(map.chunkState().exists(0, -1));
     storage.close();
     assertThrows(java.io.IOException.class, () -> map.tileState().read(-123, 456));
-    var restarted = new S3Storage(client, "test/", "https://cdn.example.com", temporary);
+    var restarted = storage("https://cdn.example.com");
     var restored = restarted.map("world");
     try (var in = restored.tileState().read(-123, 456)) {
       assertEquals("new tiles", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
@@ -218,7 +248,7 @@ class S3Test {
     assertFalse(restored.tileState().exists(-123, 456));
     restarted.close();
     requests.clear();
-    var afterPurge = new S3Storage(client, "test/", "https://cdn.example.com", temporary);
+    var afterPurge = storage("https://cdn.example.com");
     assertFalse(afterPurge.map("world").chunkState().exists(42, 0));
     assertTrue(requests.isEmpty());
     afterPurge.close();
@@ -236,7 +266,7 @@ class S3Test {
           exchange.sendResponseHeaders(403, -1);
           exchange.close();
         });
-    var storage = new S3Storage(client, "test/", "https://cdn.example.com", temporary);
+    var storage = storage("https://cdn.example.com");
     assertThrows(java.io.IOException.class, () -> storage.map("world").tileState().write(0, 0));
     assertFalse(java.nio.file.Files.exists(temporary.resolve("world/.s3-imported")));
     assertTrue(requests.stream().noneMatch(r -> r.startsWith("PUT")));

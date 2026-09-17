@@ -24,6 +24,8 @@ public final class StorageConfig
   private boolean forcePathStyle = true;
   private String rootPath = "";
   private String publicUrl = "";
+  private String publicLiveUrl = "";
+  private long settingsPublishInterval = 10;
   private String renderStatePath = "bluemap/rstate";
 
   @Override
@@ -42,6 +44,16 @@ public final class StorageConfig
           || publicRoot.getFragment() != null)
         throw new IllegalArgumentException(
             "public-url must be the public HTTP(S) URL of root-path");
+      var publicLive = java.net.URI.create(publicLiveUrl);
+      if (!("https".equals(publicLive.getScheme()) || "http".equals(publicLive.getScheme()))
+          || publicLive.getHost() == null
+          || publicLive.getUserInfo() != null
+          || publicLive.getQuery() != null
+          || publicLive.getFragment() != null)
+        throw new IllegalArgumentException(
+            "public-live-url must be the public HTTP(S) URL of the BlueMap webserver");
+      if (settingsPublishInterval < 1)
+        throw new IllegalArgumentException("settings-publish-interval must be at least 1 second");
       String prefix = rootPath.replaceAll("^/+|/+$", "");
       if (!prefix.isEmpty() && !prefix.matches("[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*"))
         throw new IllegalArgumentException(
@@ -57,6 +69,8 @@ public final class StorageConfig
               forcePathStyle),
           prefix.isEmpty() ? "" : prefix + "/",
           publicUrl.replaceAll("/+$", ""),
+          publicLiveUrl.replaceAll("/+$", ""),
+          settingsPublishInterval,
           java.nio.file.Path.of(renderStatePath)
               .resolve(
                   java.util

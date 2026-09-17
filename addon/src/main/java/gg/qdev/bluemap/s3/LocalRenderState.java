@@ -74,6 +74,16 @@ final class LocalRenderState {
     imported = true;
   }
 
+  /** Live data is kept local-only (never uploaded to S3). */
+  ItemStorage markers() {
+    return files.markers();
+  }
+
+  /** Live data is kept local-only (never uploaded to S3). */
+  ItemStorage players() {
+    return files.players();
+  }
+
   private final class LocalGrid implements GridStorage {
     private final GridStorage delegate;
 

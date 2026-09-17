@@ -26,7 +26,9 @@ class R2IntegrationTest {
             "",
             true);
     String prefix = "contract-test-" + UUID.randomUUID() + "/";
-    var storage = new S3Storage(client, prefix, "https://cdn.example.com/" + prefix, temporary);
+    var storage =
+        new S3Storage(
+            client, prefix, "https://cdn.example.com/" + prefix, "https://mc.example.com:8100", 10, temporary);
     try {
       storage.initialize();
       var map = storage.map("custom_world");
