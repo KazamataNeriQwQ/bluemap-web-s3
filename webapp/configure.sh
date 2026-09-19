@@ -4,6 +4,8 @@ set -eu
 # Included only in the settings.json location.
 : > /etc/nginx/bluemap-settings.conf
 
+printf 'return 404;\n' > /etc/nginx/bluemap-maps.conf
+
 # A mounted file is authoritative; a directory mount also supports atomic replacements.
 if [ -e /config/settings.json ]; then
   jq -e 'type == "object" and (.maps | type == "array")' /config/settings.json > /dev/null
@@ -18,6 +20,7 @@ if [ -n "${SETTINGS_URL:-}" ]; then
     exit 1
   }
   printf 'return 302 "%s";\n' "$SETTINGS_URL" > /etc/nginx/bluemap-settings.conf
+  printf 'return 302 "%s/$1$is_args$args";\n' "${SETTINGS_URL%/*}" > /etc/nginx/bluemap-maps.conf
   exit 0
 fi
 
