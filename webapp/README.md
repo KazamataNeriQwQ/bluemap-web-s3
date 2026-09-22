@@ -2,6 +2,8 @@ Official checksum-pinned BlueMap 5.24 webapp in Nginx, without UI changes or loc
 
 `SETTINGS_URL` redirects `/settings.json` to the addon's public settings document. The browser downloads it directly; nothing is copied or cached in the container. No S3 credentials.
 
+With `SETTINGS_URL`, legacy `/maps/...` requests (MapLink) redirect to its parent CDN directory, preserving query strings.
+
 Optional alternatives, in precedence order:
 
 1. Mount a directory containing `settings.json` at `/config:ro`; served unchanged and supports atomic replacements without restart.
