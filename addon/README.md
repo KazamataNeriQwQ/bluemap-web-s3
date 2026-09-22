@@ -1,5 +1,7 @@
 S3 storage for BlueMap 5.7 using JDK HTTP, SHA-256/HMAC signing, and BlueMap's own compression/JSON libraries. No bundled runtime dependencies or native binaries.
 
+BlueMap 5.24+ added `MapStorage.regionState()`. The pack implements it (kept local like the other render state) so it runs on newer BlueMap without `AbstractMethodError`. It is compiled against the last published BlueMapCommon API, which predates that method.
+
 `mvn package` builds the jar; `mvn test` runs contract tests against an in-process HTTP server. Optional `S3_TEST_ENDPOINT`, `S3_TEST_BUCKET`, `S3_TEST_REGION`, `S3_TEST_ACCESS_KEY`, and `S3_TEST_SECRET_KEY` enable the real-bucket test, isolated under a random prefix and cleaned afterward. Compilation uses the last published BlueMapCommon API (5.3); runtime compatibility is tested on 5.7, not promised for future internal APIs.
 
 Additional storage config:

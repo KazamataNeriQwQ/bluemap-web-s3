@@ -255,6 +255,43 @@ class S3Test {
   }
 
   @Test
+  void regionStateImportsOnceAndStaysLocal() throws Exception {
+    String regionKey =
+        "test/world/rstate/regions/" + S3Storage.gridPath(-12, 345) + ".regions.dat";
+    objects.put(regionKey, gzip("old regions"));
+    var storage = storage("https://cdn.example.com");
+    var map = storage.map("world");
+    try (var in = map.regionState().read(-12, 345)) {
+      assertEquals(
+          "old regions", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
+    }
+    assertTrue(
+        java.nio.file.Files.exists(
+            temporary.resolve("world/rstate/regions/" + S3Storage.gridPath(-12, 345) + ".regions.dat")));
+    requests.clear();
+    try (var out = map.regionState().write(-12, 345)) {
+      out.write("new regions".getBytes());
+    }
+    try (var out = map.regionState().write(7, -8)) {
+      out.write("second".getBytes());
+    }
+    try (var cells = map.regionState().stream()) {
+      assertEquals(2, cells.count());
+    }
+    assertTrue(requests.isEmpty()); // Region state is never uploaded to S3.
+    assertArrayEquals(gzip("old regions"), objects.get(regionKey)); // Import never modifies S3.
+    storage.close();
+    assertThrows(java.io.IOException.class, () -> map.regionState().read(-12, 345));
+    var restarted = storage("https://cdn.example.com");
+    try (var in = restarted.map("world").regionState().read(7, -8)) {
+      assertEquals("second", new String(in.decompress().readAllBytes(), StandardCharsets.UTF_8));
+    }
+    restarted.map("world").regionState().delete(-12, 345);
+    assertFalse(restarted.map("world").regionState().exists(-12, 345));
+    restarted.close();
+  }
+
+  @Test
   void interruptedImportBlocksWritesAndCanRetry() throws Exception {
     String good = "test/world/rstate/x0/z0.chunks.dat";
     String failed = "test/world/rstate/x0/z0.tiles.dat";

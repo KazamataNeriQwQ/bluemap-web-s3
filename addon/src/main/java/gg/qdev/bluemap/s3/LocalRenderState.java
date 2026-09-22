@@ -16,7 +16,7 @@ final class LocalRenderState {
   private final Path root, marker;
   private final FileMapStorage files;
   private boolean imported;
-  final GridStorage tiles, chunks;
+  final GridStorage tiles, chunks, regions;
 
   LocalRenderState(S3Storage owner, String remoteRoot, Path root) {
     this.owner = owner;
@@ -26,6 +26,7 @@ final class LocalRenderState {
     files = new FileMapStorage(root, Compression.GZIP, true);
     tiles = new LocalGrid(files.tileState());
     chunks = new LocalGrid(files.chunkState());
+    regions = new LocalGrid(new LocalRegionGrid(root.resolve("rstate").resolve("regions"), owner));
   }
 
   private synchronized void ready() throws IOException {
@@ -33,10 +34,11 @@ final class LocalRenderState {
     if (imported) return;
     if (!Files.exists(marker)) {
       Logger.global.logInfo("Qdev S3: importing render state from " + remoteRoot + " to " + root);
-      // No renderer writes are allowed until BOTH grids have imported successfully.
+      // No renderer writes are allowed until ALL grids have imported successfully.
       // Retrying an interrupted import is safe: only completed local files are skipped.
       Pattern valid =
-          Pattern.compile("x-?\\d+(?:/\\d+)*?/z-?\\d+(?:/\\d+)*\\.(tiles|chunks)\\.dat");
+          Pattern.compile(
+              "(?:regions/)?x-?\\d+(?:/\\d+)*?/z-?\\d+(?:/\\d+)*\\.(tiles|chunks|regions)\\.dat");
       try (var keys = owner.client.list(remoteRoot)) {
         var iterator = keys.iterator();
         while (iterator.hasNext()) {

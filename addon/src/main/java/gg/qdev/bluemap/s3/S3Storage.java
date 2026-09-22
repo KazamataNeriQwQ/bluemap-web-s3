@@ -257,6 +257,12 @@ final class S3Storage implements Storage {
       return state.chunks;
     }
 
+    // BlueMap 5.24+ added this to MapStorage. Not annotated with @Override because the compile
+    // API (BlueMapCommon 5.3) does not declare it; at runtime it satisfies the newer interface.
+    public GridStorage regionState() {
+      return state.regions;
+    }
+
     @Override
     public ItemStorage asset(String name) {
       return new Item(root + "assets/" + MapStorage.escapeAssetName(name), Compression.NONE);
